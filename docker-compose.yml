@@ -1,0 +1,46 @@
+version: '3'
+services:
+    app:
+        build:
+            context: .
+            dockerfile: docker/app/Dockerfile
+        image: php-laravel-app
+        container_name: php-laravel-app
+        restart: unless-stopped
+        tty: true
+        environment:
+            SERVICE_NAME: app
+            SERVICE_TAGS: dev
+            AWS_ACCESS_KEY_ID: dummy
+            AWS_SECRET_ACCESS_KEY: dummy
+            AWS_DEFAULT_REGION: us-east-1
+            SQS_ENDPOINT: "http://localstack:4576"
+            PHP_IDE_CONFIG: "serverName=Docker"
+            XDEBUG_CONFIG: "client_host=host.docker.internal"
+        working_dir: /var/www
+        volumes:
+            - ./:/var/www
+        ports:
+            - "8080:80"
+        depends_on:
+            - localstack
+        networks:
+            - app-network
+
+    localstack:
+        image: localstack/localstack
+        ports:
+            - "4572:4572"
+            - "4576:4576"
+        environment:
+            - SERVICES=s3,sqs
+            - DATA_DIR=/tmp/localstack/data
+        volumes:
+            - ./stubs/s3:/tmp/localstack
+            - /var/run/docker.sock:/var/run/docker.sock
+        networks:
+            - app-network
+
+networks:
+    app-network:
+        driver: bridge
